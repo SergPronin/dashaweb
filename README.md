@@ -1,401 +1,209 @@
-# Документация проекта: Сайт "Подборки мест для отдыха"
+# Binary Tree Leaf Remover
 
-## 1. Обзор проекта
+## Введение
+Эта программа реализует приложение на Java с использованием библиотеки Swing для работы с двоичным деревом. Основная задача — удаление всех листьев, не находящихся на самом нижнем уровне дерева. Дерево вводится в скобочной нотации, отображается графически и в текстовом формате, соответствующем требованиям задачи. Проект структурирован для максимальной понятности, модульности и удобства использования.
 
-**Цель проекта**:  
-Создать веб-приложение, которое позволяет пользователям просматривать подборки мест для отдыха по сезонам (лето, зима, весна, осень), регистрироваться, управлять профилем, добавлять места в избранное и предоставляет администратору (первому зарегистрированному пользователю) возможность управлять пользователями.
+## Теория
 
-**Ключевые функции**:
-- Регистрация и авторизация с шифрованием паролей.
-- Назначение роли администратора первому пользователю.
-- Личный кабинет: редактирование профиля (имя, email) и удаление аккаунта.
-- Избранное: сохранение мест в базе для авторизованных пользователей, в браузере для гостей.
-- Админ-панель: просмотр и удаление пользователей.
-- Баннер cookies для согласия на использование локального хранилища.
+### Двоичные деревья
+Двоичное дерево — это иерархическая структура данных, в которой каждый узел имеет не более двух потомков (левый и правый). Основные понятия:
+- **Узел**: Элемент дерева, содержащий значение и ссылки на левое и правое поддерево.
+- **Корень**: Верхний узел дерева.
+- **Лист**: Узел, у которого нет потомков (левый и правый дочерние узлы равны `null`).
+- **Глубина узла**: Количество уровней от корня до данного узла (корень имеет глубину 1).
+- **Максимальная глубина дерева**: Длина самого длинного пути от корня до листа.
 
-**Технологии**:
-- **PHP**: Серверная логика (регистрация, авторизация, работа с базой).
-- **MySQL**: Хранение данных (пользователи, избранное).
-- **JavaScript**: Управление баннером cookies и избранным для гостей.
-- **MAMP**: Локальный сервер (Apache для PHP, MySQL для базы).
-- HTML и CSS используются для структуры и стилей, но не будут подробно разбираться.
+### Скобочная нотация
+Скобочная нотация — это способ представления дерева в виде строки, где:
+- Каждый узел записывается как `(значение (левое_поддерево)(правое_поддерево))`.
+- Если поддерево отсутствует, оно обозначается пустыми скобками `()` или пропускается.
+- Пример: `(1(2)(3))` описывает дерево с корнем 1, левым ребенком 2 (лист) и правым ребенком 3 (лист).
 
-**Особенности**:
-- Первый зарегистрированный пользователь автоматически становится администратором.
-- Безопасность: шифрование паролей, защита от SQL-инъекций через подготовленные выражения.
-- Нет сторонних библиотек (например, jQuery, Bootstrap), весь код написан вручную.
+### Задача: Удаление листьев
+Задача требует удалить все листья, которые не находятся на максимальной глубине дерева. Лист — это узел, у которого нет дочерних узлов. Алгоритм должен:
+1. Найти максимальную глубину дерева.
+2. Удалить все листья, находящиеся на глубине меньше максимальной.
+3. Сохранить структуру дерева, обновляя ссылки на оставшиеся узлы.
 
----
+### Требования к реализации
+- Реализация дерева через класс `BinaryTree<T>` с внутренним классом узла `Node`.
+- Поддержка ввода дерева в скобочной нотации.
+- Вывод дерева в текстовом формате (A, AB1, AB2, ...) и графическое отображение.
+- Возможность расширения для деревьев с произвольным числом потомков (хотя задача требует двоичное дерево).
 
-## 2. Структура проекта
+## Структура проекта
+Проект разделен на несколько файлов для модульности:
+- **BinaryTreeApp.java**: Главный класс, реализующий пользовательский интерфейс (Swing).
+- **BinaryTree.java**: Класс двоичного дерева, содержащий логику работы с деревом и метод удаления листьев.
+- **TreePanel.java**: Класс для графической отрисовки дерева.
+- **TreeParser.java**: Класс для парсинга скобочной нотации.
+- **README.md**: Документация проекта.
 
-Проект размещён в папке `/Applications/MAMP/htdocs`, где MAMP запускает локальный сервер. Вот структура файлов, связанных с ключевой логикой:
+## Подробное объяснение кода
 
+### BinaryTree.java
+Этот файл содержит реализацию двоичного дерева и основную логику задачи.
+
+#### Класс `BinaryTree<T>`
+- **Обобщения**: Использует параметр типа `T extends Comparable<T>` для поддержки любых сравниваемых типов данных. В данном проекте используется `Integer`.
+- **Поля**:
+  - `private Node root`: Корень дерева.
+- **Внутренний класс `Node`**:
+  - Поля: `T value` (значение узла), `Node left` (левый ребенок), `Node right` (правый ребенок).
+  - Конструктор: `Node(T value)` инициализирует узел с заданным значением.
+
+#### Метод `buildFromString`
+- **Назначение**: Строит дерево из строки в скобочной нотации.
+- **Реализация**: Делегирует парсинг классу `TreeParser`, передавая текущий экземпляр `BinaryTree` для создания узлов правильного типа.
+- **Код**:
+  ```java
+  public void buildFromString(String input) {
+      root = TreeParser.parse(input, this);
+  }
+  ```
+
+#### Метод `removeNonLowestLeaves`
+- **Назначение**: Удаляет все листья, не находящиеся на максимальной глубине.
+- **Алгоритм**:
+  1. Находит максимальную глубину дерева с помощью `findMaxDepth`.
+  2. Рекурсивно обходит дерево, удаляя листья на глубине меньше максимальной.
+  3. Проверяет, не стал ли узел листом после обработки его детей, и удаляет его, если он не на максимальной глубине.
+- **Код**:
+  ```java
+  public void removeNonLowestLeaves() {
+      if (root == null) return;
+      int maxDepth = findMaxDepth(root);
+      root = removeNonLowestLeaves(root, 1, maxDepth);
+  }
+
+  private int findMaxDepth(Node node) {
+      if (node == null) return 0;
+      return 1 + Math.max(findMaxDepth(node.left), findMaxDepth(node.right));
+  }
+
+  private Node removeNonLowestLeaves(Node node, int currentDepth, int maxDepth) {
+      if (node == null) return null;
+      if (node.left == null && node.right == null && currentDepth < maxDepth) {
+          return null;
+      }
+      node.left = removeNonLowestLeaves(node.left, currentDepth + 1, maxDepth);
+      node.right = removeNonLowestLeaves(node.right, currentDepth + 1, maxDepth);
+      if (node.left == null && node.right == null && currentDepth < maxDepth) {
+          return null;
+      }
+      return node;
+  }
+  ```
+- **Объяснение**:
+  - `findMaxDepth`: Рекурсивно вычисляет максимальную глубину, возвращая 0 для `null`-узлов и 1 + максимум глубин левого и правого поддерева.
+  - `removeNonLowestLeaves`:
+    - Проверяет, является ли текущий узел листом (`left == null && right == null`) и находится ли он на глубине меньше максимальной (`currentDepth < maxDepth`). Если да, узел удаляется (`return null`).
+    - Рекурсивно обрабатывает левое и правое поддерево.
+    - После обработки детей проверяет, не стал ли узел листом (например, если его дети были удалены). Если он стал листом и не на максимальной глубине, он тоже удаляется.
+  - Этот метод гарантирует, что все листья, не на максимальной глубине, удаляются, включая те, которые стали листьями в процессе обработки.
+
+#### Метод `printTree`
+- **Назначение**: Формирует текстовое представление дерева в формате A, AB1, AB2, ...
+- **Код**:
+  ```java
+  public String printTree() {
+      StringBuilder sb = new StringBuilder();
+      printTree(root, "", sb);
+      return sb.toString();
+  }
+
+  private void printTree(Node node, String prefix, StringBuilder sb) {
+      if (node == null) return;
+      sb.append(prefix).append(node.value).append("\n");
+      printTree(node.left, prefix + node.value, sb);
+      printTree(node.right, prefix + node.value, sb);
+  }
+  ```
+- **Объяснение**:
+  - Рекурсивно обходит дерево, добавляя значение узла к префиксу.
+  - Для каждого узла формирует строку вида `prefix + node.value`.
+  - Обрабатывает левое и правое поддерево с обновленным префиксом.
+  - Формат соответствует требованиям: корень (A), затем пути к узлам (AB1, AB2, ...).
+
+#### Метод `createNode`
+- **Назначение**: Создает узел для использования в `TreeParser`.
+- **Код**:
+  ```java
+  public Node createNode(T value) {
+      return new Node(value);
+  }
+  ```
+
+### TreeParser.java
+- **Назначение**: Парсит строку в скобочной нотации и строит дерево.
+- **Ключевой метод**:
+  ```java
+  public static <T extends Comparable<T>> BinaryTree<T>.Node parse(String input, BinaryTree<T> tree) {
+      if (input == null || input.isEmpty()) {
+          return null;
+      }
+      return parseNode(input, new int[]{0}, tree);
+  }
+  ```
+- **Объяснение**:
+  - Использует массив `index` для отслеживания текущей позиции в строке.
+  - Пропускает открывающую скобку `(`.
+  - Читает числовое значение узла.
+  - Создает узел через `tree.createNode`.
+  - Рекурсивно парсит левое и правое поддерево.
+  - Пропускает закрывающую скобку `)`.
+  - Обрабатывает ошибки ввода, выбрасывая исключения.
+
+### TreePanel.java
+- **Назначение**: Графически отображает дерево.
+- **Ключевой метод**:
+  ```java
+  protected void paintComponent(Graphics g) {
+      super.paintComponent(g);
+      if (tree != null && tree.getRoot() != null) {
+          drawTree(g, tree.getRoot(), getWidth() / 2, 50, getWidth() / 4, 50);
+      }
+  }
+  ```
+- **Объяснение**:
+  - Рисует узлы как синие круги с белым текстом (значение узла).
+  - Соединяет узлы черными линиями.
+  - Рекурсивно отрисовывает левое и правое поддерево, уменьшая горизонтальное смещение (`xOffset`) для каждого уровня.
+
+### BinaryTreeApp.java
+- **Назначение**: Главный класс, реализующий Swing-интерфейс.
+- **Основные компоненты**:
+  - **Панель управления**: Текстовое поле для ввода скобочной нотации и кнопки "Build Tree" и "Remove Non-Lowest Leaves".
+  - **Графическая панель**: Отображает дерево с помощью `TreePanel`.
+  - **Текстовое поле**: Показывает текстовое представление дерева.
+- **Обработчики событий**:
+  - "Build Tree": Парсит ввод и строит дерево.
+  - "Remove Non-Lowest Leaves": Выполняет удаление листьев и обновляет отображение.
+
+
+
+4. **Использование**:
+   - Введите дерево в скобочной нотации в текстовое поле (например, `(1(2(4))(3))`).
+   - Нажмите "Build Tree" — дерево отобразится графически и в текстовом формате.
+   - Нажмите "Remove Non-Lowest Leaves" — программа удалит листья, не на максимальной глубине, и обновит отображение.
+
+## Примеры для проверки
+Ниже приведены три примера деревьев, где гарантированно происходит удаление листьев, так как в каждом есть листья на глубине меньше максимальной.
+
+### Пример 1: Простое дерево с листом на меньшей глубине
+**Ввод**:
 ```
-htdocs/
-├── js/
-│   └── cookie.js         # Скрипт для баннера cookies
-├── index.php            # Главная страница
-├── summer.php           # Подборка мест для лета
-├── winter.php           # Подборка мест для зимы
-├── spring.php           # Подборка мест для весны
-├── autumn.php           # Подборка мест для осени
-├── favorites.php        # Страница избранного
-├── register.php         # Регистрация
-├── login.php            # Авторизация
-├── profile.php          # Личный кабинет
-├── admin.php            # Админ-панель
-├── logout.php           # Выход
-├── config.php           # Подключение к базе
-├── delete_user.php      # Удаление пользователя админом
-├── toggle_favorite.php  # Добавление/удаление в избранное
-├── remove_favorite.php  # Удаление из избранного
-└── database.sql         # SQL-скрипт для базы
+(1(2(4))(3))
 ```
 
-**Описание файлов**:
-- **PHP-файлы**: Реализуют серверную логику и взаимодействие с базой.
-- **cookie.js**: Управляет баннером cookies (сохраняет согласие в `localStorage`).
-- **database.sql**: Создаёт базу `travel_db` с таблицами `users` и `favorites`.
-- Папка `css/` (с `styles.css`) и `images/` не рассматриваются, так как связаны с дизайном.
+### Пример 2: Несбалансированное дерево
+**Ввод**:
+```
+(1(2(4(8))(5))(3))
+```
 
----
-
-## 3. Роль базы данных
-
-**База**: `travel_db`  
-**Система**: MySQL (в MAMP)  
-**Таблицы**:
-1. **users**:
-   ```sql
-   CREATE TABLE users (
-       id INT AUTO_INCREMENT PRIMARY KEY,
-       username VARCHAR(50) NOT NULL,
-       email VARCHAR(100) NOT NULL UNIQUE,
-       password VARCHAR(255) NOT NULL,
-       role ENUM('user', 'admin') DEFAULT 'user',
-       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-   );
-   ```
-   - `id`: Уникальный идентификатор пользователя.
-   - `username`: Имя пользователя.
-   - `email`: Уникальный email.
-   - `password`: Зашифрованный пароль (с помощью `password_hash`).
-   - `role`: `admin` для первого пользователя, `user` для остальных.
-   - `created_at`: Дата регистрации.
-
-2. **favorites**:
-   ```sql
-   CREATE TABLE favorites (
-       id INT AUTO_INCREMENT PRIMARY KEY,
-       user_id INT NOT NULL,
-       item_id VARCHAR(50) NOT NULL,
-       title VARCHAR(100) NOT NULL,
-       img VARCHAR(255) NOT NULL,
-       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-   );
-   ```
-   - `id`: Уникальный идентификатор записи.
-   - `user_id`: ID пользователя.
-   - `item_id`: ID места (например, "autumn1").
-   - `title`: Название места.
-   - `img`: Путь к изображению.
-   - `ON DELETE CASCADE`: Удаление пользователя удаляет его избранное.
-
-**Зачем база?**
-- Хранит пользователей (их данные, роли, пароли).
-- Сохраняет избранное для авторизованных пользователей.
-- Обеспечивает работу админ-панели (список пользователей).
-
-**Взаимодействие**:
-- PHP подключается к базе через `config.php`:
-  ```php
-  session_start();
-  $db_host = 'localhost';
-  $db_user = 'root';
-  $db_pass = 'root';
-  $db_name = 'travel_db';
-  $db_port = 8889;
-  $conn = mysqli_connect($db_host, $db_user, $db_pass, $db_name, $db_port);
-  if (!$conn) {
-      die("Ошибка подключения: " . mysqli_connect_error());
-  }
-  ```
-- Используются подготовленные выражения для SQL-запросов, чтобы предотвратить инъекции.
-
----
-
-## 4. Ключевые элементы логики
-
-### 4.1. Регистрация (`register.php`)
-**Цель**: Создание нового пользователя, назначение роли `admin` первому зарегистрированному.
-
-**Логика**:
-1. Пользователь отправляет форму (POST-запрос) с полями: `username`, `email`, `password`, `confirm_password`.
-2. Проверки:
-   - Поля не пустые.
-   - Email корректный (`filter_var`).
-   - Пароль ≥ 6 символов.
-   - Пароли совпадают.
-   - Email не занят:
-     ```php
-     $stmt = mysqli_prepare($conn, "SELECT id FROM users WHERE email = ?");
-     mysqli_stmt_bind_param($stmt, 's', $email);
-     mysqli_stmt_execute($stmt);
-     mysqli_stmt_store_result($stmt);
-     if (mysqli_stmt_num_rows($stmt) > 0) {
-         $errors[] = "Этот email уже зарегистрирован.";
-     }
-     ```
-3. Назначение роли:
-   - Проверяется количество пользователей:
-     ```php
-     $check_users = mysqli_query($conn, "SELECT COUNT(*) as total FROM users");
-     $row = mysqli_fetch_assoc($check_users);
-     $role = ($row['total'] == 0) ? 'admin' : 'user';
-     ```
-   - Первый пользователь получает `role = 'admin'`, остальные — `role = 'user'`.
-4. Сохранение:
-   - Пароль шифруется:
-     ```php
-     $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-     ```
-   - Данные записываются в `users`:
-     ```php
-     $stmt = mysqli_prepare($conn, "INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, ?)");
-     mysqli_stmt_bind_param($stmt, 'ssss', $username, $email, $hashed_password, $role);
-     mysqli_stmt_execute($stmt);
-     ```
-5. Создаётся сессия:
-   ```php
-   $_SESSION['user_id'] = mysqli_insert_id($conn);
-   $_SESSION['username'] = $username;
-   $_SESSION['role'] = $role;
-   header("Location: profile.php");
-   ```
-
-**Безопасность**:
-- Подготовленные выражения защищают от SQL-инъекций.
-- Пароль хранится в зашифрованном виде (`password_hash`).
-
----
-
-### 4.2. Авторизация (`login.php`)
-**Цель**: Вход в аккаунт с проверкой пароля.
-
-**Логика**:
-1. Пользователь отправляет форму с `email` и `password`.
-2. Проверяется существование email:
-   ```php
-   $stmt = mysqli_prepare($conn, "SELECT id, username, password, role FROM users WHERE email = ?");
-   mysqli_stmt_bind_param($stmt, 's', $email);
-   mysqli_stmt_execute($stmt);
-   $result = mysqli_stmt_get_result($stmt);
-   $user = mysqli_fetch_assoc($result);
-   ```
-3. Проверяется пароль:
-   ```php
-   if (password_verify($password, $user['password'])) {
-       $_SESSION['user_id'] = $user['id'];
-       $_SESSION['username'] = $user['username'];
-       $_SESSION['role'] = $user['role'];
-       header("Location: profile.php");
-   } else {
-       $errors[] = "Неверный email или пароль.";
-   }
-   ```
-4. При успехе создаётся сессия, пользователь перенаправляется в личный кабинет.
-
-**Безопасность**:
-- Пароль проверяется через `password_verify`, сравнивая с зашифрованным.
-- Подготовленные выражения для SQL.
-
----
-
-### 4.3. Личный кабинет (`profile.php`)
-**Цель**: Редактирование профиля и удаление аккаунта.
-
-**Логика**:
-- **Редактирование**:
-  1. Показываются текущие данные:
-     ```php
-     $stmt = mysqli_prepare($conn, "SELECT username, email FROM users WHERE id = ?");
-     mysqli_stmt_bind_param($stmt, 'i', $user_id);
-     mysqli_stmt_execute($stmt);
-     $result = mysqli_stmt_get_result($stmt);
-     $user = mysqli_fetch_assoc($result);
-     ```
-  2. Пользователь отправляет форму с новым `username` и `email`.
-  3. Проверки:
-     - Поля не пустые.
-     - Email корректный.
-     - Email не занят другим пользователем:
-       ```php
-       $stmt = mysqli_prepare($conn, "SELECT id FROM users WHERE email = ? AND id != ?");
-       mysqli_stmt_bind_param($stmt, 'si', $new_email, $user_id);
-       ```
-  4. Обновление:
-     ```php
-     $stmt = mysqli_prepare($conn, "UPDATE users SET username = ?, email = ? WHERE id = ?");
-     mysqli_stmt_bind_param($stmt, 'ssi', $new_username, $new_email, $user_id);
-     mysqli_stmt_execute($stmt);
-     $_SESSION['username'] = $new_username;
-     ```
-- **Удаление аккаунта**:
-  1. Пользователь подтверждает действие через JavaScript (`confirm`).
-  2. Удаление из `users`:
-     ```php
-     $stmt = mysqli_prepare($conn, "DELETE FROM users WHERE id = ?");
-     mysqli_stmt_bind_param($stmt, 'i', $user_id);
-     mysqli_stmt_execute($stmt);
-     ```
-  3. Избранное удаляется автоматически (`ON DELETE CASCADE`).
-  4. Сессия уничтожается:
-     ```php
-     session_destroy();
-     header("Location: index.php");
-     ```
-
-**Безопасность**:
-- Проверка авторизации:
-  ```php
-  if (!isset($_SESSION['user_id'])) {
-      header("Location: login.php");
-  }
-  ```
-- Подготовленные выражения.
-
----
-
-### 4.4. Админ-панель (`admin.php`)
-**Цель**: Управление пользователями (просмотр, удаление).
-
-**Логика**:
-1. Проверяется роль:
-   ```php
-   if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
-       header("Location: login.php");
-   }
-   ```
-2. Получается список пользователей:
-   ```php
-   $query = "SELECT id, username, email, role, created_at FROM users";
-   $result = mysqli_query($conn, $query);
-   $users = mysqli_fetch_all($result, MYSQLI_ASSOC);
-   ```
-3. Удаление через `delete_user.php`:
-   ```php
-   $stmt = mysqli_prepare($conn, "DELETE FROM users WHERE id = ?");
-   mysqli_stmt_bind_param($stmt, 'i', $user_id);
-   mysqli_stmt_execute($stmt);
-   ```
-
-**Безопасность**:
-- Ограничение доступа только для админа.
-- Подготовленные выражения в `delete_user.php`.
-
----
-
-### 4.5. Избранное (`favorites.php`, `toggle_favorite.php`, `remove_favorite.php`)
-**Цель**: Сохранение и отображение избранных мест.
-
-**Логика**:
-- **Для авторизованных**:
-  - Добавление/удаление в `toggle_favorite.php`:
-    ```php
-    $stmt = mysqli_prepare($conn, "SELECT id FROM favorites WHERE user_id = ? AND item_id = ?");
-    if (mysqli_stmt_num_rows($stmt) > 0) {
-        $stmt = mysqli_prepare($conn, "DELETE FROM favorites WHERE user_id = ? AND item_id = ?");
-    } else {
-        $stmt = mysqli_prepare($conn, "INSERT INTO favorites (user_id, item_id, title, img) VALUES (?, ?, ?, ?)");
-    }
-    ```
-  - Отображение в `favorites.php`:
-    ```php
-    $stmt = mysqli_prepare($conn, "SELECT item_id, title, img FROM favorites WHERE user_id = ?");
-    ```
-  - Удаление в `remove_favorite.php`:
-    ```php
-    $stmt = mysqli_prepare($conn, "DELETE FROM favorites WHERE user_id = ? AND item_id = ?");
-    ```
-- **Для гостей**:
-  - Используется `localStorage` через JavaScript:
-    ```javascript
-    function toggleFavorite(itemId, title, img) {
-        let favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
-        if (favorites.some(item => item.itemId === itemId)) {
-            favorites = favorites.filter(item => item.itemId !== itemId);
-        } else {
-            favorites.push({ itemId, title, img });
-        }
-        localStorage.setItem('favorites', JSON.stringify(favorites));
-    }
-    ```
-
----
-
-### 4.6. Баннер Cookies (`cookie.js`)
-**Цель**: Запрос согласия на использование `localStorage`.
-
-**Логика**:
-- Проверяется, принято ли согласие:
-  ```javascript
-  if (!localStorage.getItem('cookiesAccepted')) {
-      document.getElementById('cookieConsent').style.display = 'flex';
-  }
-  ```
-- При нажатии "Принять" сохраняется:
-  ```javascript
-  function acceptCookies() {
-      localStorage.setItem('cookiesAccepted', 'true');
-      document.getElementById('cookieConsent').style.display = 'none';
-  }
-  ```
-
----
-
-## 5. Технологии и их роль
-
-- **PHP**: Обрабатывает запросы, управляет сессиями, взаимодействует с базой.
-- **MySQL**: Хранит данные в таблицах `users` и `favorites`.
-- **JavaScript**: Управляет баннером cookies и избранным для гостей.
-- **MAMP**: Предоставляет сервер (Apache для PHP, MySQL для базы).
-- HTML и CSS не рассматриваются, так как связаны с дизайном.
-
----
-
-## 6. Инструкции для запуска
-
-1. **Установите MAMP**:
-   - Скачайте и установите MAMP в `/Applications/MAMP`.
-2. **Разместите файлы**:
-   - Скопируйте проект в `/Applications/MAMP/htdocs`.
-3. **Создайте базу**:
-   - Откройте `http://localhost:8888/phpMyAdmin` (логин: `root`, пароль: `root`).
-   - Создайте базу `travel_db`, импортируйте `database.sql`.
-4. **Запустите MAMP**:
-   - Откройте MAMP, нажмите **Start Servers**.
-5. **Откройте сайт**:
-   - Перейдите на `http://localhost:8888/index.php`.
-6. **Тестируйте**:
-   - Зарегистрируйтесь (первый пользователь — админ).
-   - Войдите, отредактируйте профиль, добавьте место в избранное.
-   - Под админом откройте `admin.php`.
-
----
-
-## 7. Заключение
-
-Проект демонстрирует создание динамического веб-приложения с авторизацией, управлением пользователями и избранным. Ключевые элементы:
-- Назначение админа первому пользователю.
-- Шифрование паролей (`password_hash`, `password_verify`).
-- Безопасные SQL-запросы.
-- Сессии для авторизации.
-- Логика избранного в базе и `localStorage`.
-
-**Для преподавателя**:
-- Проект показывает понимание серверной логики, работы с базами, сессиями и безопасностью.
-- Код структурирован, использует современные практики.
-- MAMP имитирует реальный сервер для локальной разработки.
-
-Если нужны уточнения, я готов ответить на вопросы преподавателя!
+### Пример 3: Сложное дерево с листьями на разных уровнях
+**Ввод**:
+```
+(1(2(4(7)(8))(5))(3(6(9))))
+```
